@@ -1,0 +1,7 @@
+gemini:
+  model: gemini-2.5-flash
+  embedding_model: models/text-embedding-004
+techletter:
+  base_url: https://your.techletter.api/api/v1
+vector_store:
+  path: ./data/vector_store
