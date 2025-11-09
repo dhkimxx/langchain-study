@@ -62,10 +62,25 @@ python main.py ingest --reset
 python main.py qa -q "리액트 상태관리 관련 글 보여줘" -k 3
 ```
 
+3. 뉴스레터 생성 (주간 요약)
+
+```bash
+# 지난 7일 요약을 표준 출력(STDOUT)으로 출력
+python main.py newsletter --days 7
+ 
+```
+
 ## 동작
 
 - ingest: `/posts`를 페이지네이션 수집 → 텍스트 합성 → RecursiveCharacterTextSplitter 청킹 → 임베딩 → ChromaDB 저장
 - qa: Retriever로 관련 문서 조회 → Gemini 2.5 Flash가 답변 생성(제목+URL+요약 포함)
+- newsletter: 기간(KST 기준) 내 포스트 수집 → 정렬(조회수 우선) → Gemini 2.5 Flash로 마크다운 뉴스레터 생성 (STDOUT 출력)
+
+## 뉴스레터 옵션
+
+- `--days <N>`: 요약 기간(일), 기본 7
+- `--start YYYY-MM-DD --end YYYY-MM-DD`: 기간 지정(미지정 시 현재 기준 `--days` 적용)
+- `--limit <N>`: 컨텍스트에 포함할 최대 포스트 수(조회수 높은 순), 기본 50
 
 ## 시연 결과(예시)
 
