@@ -9,7 +9,7 @@ from utils.env_loader import load_settings
 from utils.logger import get_logger
 from utils.api_client import TechLetterClient, PostDTO
 from utils.data_loader import fetch_all_posts
-from utils.doc_builders import to_full_document
+from utils.doc_builders import build_document_from_full_text
 from utils.aggregate import aggregate_text
 from chains.retriever_deep import ingest_deep_documents, reset_deep_collection
 
@@ -26,7 +26,9 @@ def _safe_fetch_full_text(post: PostDTO) -> str | None:
 
 
 def run_deep_ingest(
-    reset: bool = False, limit: int | None = None, page_limit: int | None = None
+    reset: bool = False,
+    limit: int | None = None,
+    page_limit: int | None = None,
 ) -> None:
     settings = load_settings()
     if reset:
@@ -44,7 +46,7 @@ def run_deep_ingest(
         full = _safe_fetch_full_text(p)
         if not full:
             continue
-        docs.append(to_full_document(p, full))
+        docs.append(build_document_from_full_text(p, full))
 
     if not docs:
         logger.warning("인덱싱할 본문 문서가 없습니다.")
@@ -68,7 +70,11 @@ def main():
     )
     args = parser.parse_args()
 
-    run_deep_ingest(reset=args.reset, limit=args.limit, page_limit=args.page_limit)
+    run_deep_ingest(
+        reset=args.reset,
+        limit=args.limit,
+        page_limit=args.page_limit,
+    )
 
 
 if __name__ == "__main__":

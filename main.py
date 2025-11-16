@@ -56,7 +56,12 @@ def main():
         )
         print(result.content)
     elif args.command == "deep-ingest":
-        run_deep_ingest(reset=args.reset, limit=args.limit, page_limit=args.page_limit)
+        run_deep_ingest(
+            reset=args.reset,
+            limit=args.limit,
+            page_limit=args.page_limit,
+            log_path=args.log_path,
+        )
     elif args.command == "deep-qa":
         print(answer_deep_question(args.query, top_k=args.top_k))
 
