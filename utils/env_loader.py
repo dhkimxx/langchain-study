@@ -16,7 +16,7 @@ class AppSettings(BaseModel):
     techletter_base_url: str
     vector_db_path: str
     gemini_model: str = "gemini-2.5-flash"
-    embedding_model: str = "models/text-embedding-004"
+    embedding_model: str = "models/gemini-embedding-001"
 
 
 def _read_config_file(path: Path) -> Dict[str, Any]:
@@ -35,11 +35,18 @@ def load_settings(config_path: str | Path = "config.yaml") -> AppSettings:
     env = os.environ
     # env 우선, 없으면 config.yaml
     values: Dict[str, Any] = {
-        "gemini_api_key": env.get("GEMINI_API_KEY") or (cfg.get("gemini", {}) or {}).get("api_key"),
-        "techletter_base_url": env.get("TECHLETTER_BASE_URL") or (cfg.get("techletter", {}) or {}).get("base_url"),
-        "vector_db_path": env.get("VECTOR_DB_PATH") or (cfg.get("vector_store", {}) or {}).get("path"),
-        "gemini_model": env.get("GEMINI_MODEL") or (cfg.get("gemini", {}) or {}).get("model", "gemini-2.5-flash"),
-        "embedding_model": env.get("EMBEDDING_MODEL") or (cfg.get("gemini", {}) or {}).get("embedding_model", "models/text-embedding-004"),
+        "gemini_api_key": env.get("GEMINI_API_KEY")
+        or (cfg.get("gemini", {}) or {}).get("api_key"),
+        "techletter_base_url": env.get("TECHLETTER_BASE_URL")
+        or (cfg.get("techletter", {}) or {}).get("base_url"),
+        "vector_db_path": env.get("VECTOR_DB_PATH")
+        or (cfg.get("vector_store", {}) or {}).get("path"),
+        "gemini_model": env.get("GEMINI_MODEL")
+        or (cfg.get("gemini", {}) or {}).get("model", "gemini-2.5-flash"),
+        "embedding_model": env.get("EMBEDDING_MODEL")
+        or (cfg.get("gemini", {}) or {}).get(
+            "embedding_model", "models/gemini-embedding-001"
+        ),
     }
 
     try:

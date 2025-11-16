@@ -31,7 +31,7 @@ GEMINI_API_KEY=your_gemini_api_key_here
 TECHLETTER_BASE_URL=http://<host>:<port>/api/v1
 VECTOR_DB_PATH=./data/vector_store
 GEMINI_MODEL=gemini-2.5-flash
-EMBEDDING_MODEL=models/text-embedding-004
+EMBEDDING_MODEL=models/gemini-embedding-001
 ```
 
 - 참고: `GEMINI_API_KEY`는 내부에서 `GOOGLE_API_KEY`로 매핑됩니다.

@@ -60,7 +60,6 @@ def main():
             reset=args.reset,
             limit=args.limit,
             page_limit=args.page_limit,
-            log_path=args.log_path,
         )
     elif args.command == "deep-qa":
         print(answer_deep_question(args.query, top_k=args.top_k))
