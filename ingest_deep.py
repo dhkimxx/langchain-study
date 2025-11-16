@@ -42,9 +42,9 @@ def run_deep_ingest(
     logger.info(f"수집 대상 포스트 수(전체): {len(posts)}")
 
     docs = []
-    for p in posts:
+    for i, p in enumerate(posts):
         full = _safe_fetch_full_text(p)
-        print(f"{p.title} text loaded")
+        print(f"[{i}/{len(posts)}] {p.title} text loaded")
         if not full:
             continue
         docs.append(build_document_from_full_text(p, full))
