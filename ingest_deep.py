@@ -41,24 +41,26 @@ def run_deep_ingest(
 
     logger.info(f"수집 대상 포스트 수(전체): {len(posts)}")
 
-    docs = []
+    splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=150)
+    did_any = False
     for i, p in enumerate(posts):
         full = _safe_fetch_full_text(p)
         print(f"[{i}/{len(posts)}] {p.title} text loaded")
         if not full:
             continue
-        docs.append(build_document_from_full_text(p, full))
+        doc = build_document_from_full_text(p, full)
 
-    if not docs:
+        print("splitting")
+        chunks = splitter.split_documents([doc])
+
+        print("ingesting")
+        ingest_deep_documents(chunks, settings=settings)
+        did_any = True
+
+    if not did_any:
         logger.warning("인덱싱할 본문 문서가 없습니다.")
         return
 
-    print("splitting")
-    splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=150)
-    chunks = splitter.split_documents(docs)
-
-    print("ingesting")
-    ingest_deep_documents(chunks, settings=settings)
     logger.info("딥 임베딩 및 인덱싱 완료")
 
 
