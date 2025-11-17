@@ -7,15 +7,12 @@ from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_core.documents import Document
 
 from utils.env_loader import AppSettings
-from utils.model_utils import normalize_embedding_model_name
 
 _COLLECTION_NAME = "techletter_posts"
 
 
 def build_embeddings(settings: AppSettings) -> GoogleGenerativeAIEmbeddings:
-    """왜: Gemini 임베딩을 표준화된 팩토리로 생성한다."""
-    model_name = normalize_embedding_model_name(settings.embedding_model)
-    return GoogleGenerativeAIEmbeddings(model=model_name)
+    return GoogleGenerativeAIEmbeddings(model=settings.embedding_model)
 
 
 def ingest_documents(

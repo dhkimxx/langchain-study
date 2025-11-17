@@ -36,7 +36,7 @@ SIMPLE_QA_SYSTEM_PROMPT = (
 )
 
 def build_qa_chain(
-    retriever, model_name: str = "gemini-2.5-flash", temperature: float = 0.2
+    retriever, model_name: str , temperature: float = 0.2
 ):
     llm = ChatGoogleGenerativeAI(model=model_name, temperature=temperature)
 

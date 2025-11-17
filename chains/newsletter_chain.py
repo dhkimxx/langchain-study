@@ -14,7 +14,7 @@ _SYSTEM_PROMPT = (
 )
 
 
-def build_newsletter_chain(model_name: str = "gemini-2.5-flash", temperature: float = 0.3):
+def build_newsletter_chain(model_name: str, temperature: float = 0.3):
     """왜: 주간 뉴스레터 생성을 표준화된 체인으로 제공한다."""
     llm = ChatGoogleGenerativeAI(model=model_name, temperature=temperature)
 

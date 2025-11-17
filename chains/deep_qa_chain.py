@@ -17,7 +17,7 @@ _SYSTEM_PROMPT = (
 
 
 def build_deep_qa_chain(
-    retriever, model_name: str = "gemini-2.5-flash", temperature: float = 1.0
+    retriever, model_name: str, temperature: float = 1.0
 ):
     """왜: 고차원 종합 답변 + 근거 출처를 생성하는 체인."""
     llm = ChatGoogleGenerativeAI(model=model_name, temperature=temperature)
