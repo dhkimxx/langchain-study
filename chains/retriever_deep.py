@@ -39,7 +39,7 @@ def ingest_deep_documents(
                     raise
                 if "429" in str(e) or "rate limit" in str(e).lower():
                     sleep_s = 2**attempt
-                    time.sleep(sleep_s)
+                    time.sleep(sleep_s * 60)
                 else:
                     raise
 
