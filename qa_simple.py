@@ -2,19 +2,37 @@ from __future__ import annotations
 
 import argparse
 
-from utils.env_loader import load_settings
+from chains.retriever_simple_chain import get_simple_retriever
 from utils.logger import get_logger
-from chains.retriever_chain import get_retriever
-from chains.qa_chain import build_qa_chain
+from chains.qa_chain import build_simple_qa_chain
+from chains.factory import new_chat
+from utils.app_config import CONFIG
 
 
 logger = get_logger(__name__)
 
 
-def answer_question(query: str, top_k: int = 5) -> str:
-    settings = load_settings()
-    retriever = get_retriever(settings=settings, k=top_k)
-    chain = build_qa_chain(retriever, model_name=settings.gemini_model)
+def answer_simple_question(query: str, top_k: int = 5) -> str:
+    # retriever (embedding provider)
+    emb_cfg = CONFIG.get_chain_config("retriever")
+    retriever = get_simple_retriever(
+        persist_dir=CONFIG.vector_db_path,
+        provider=emb_cfg["provider"],
+        model_name=emb_cfg["model_name"],
+        api_key=emb_cfg.get("api_key"),
+        k=top_k,
+    )
+
+    # chat LLM
+    chat_cfg = CONFIG.get_chain_config("chat")
+    llm = new_chat(
+        chat_cfg["provider"],
+        chat_cfg["model_name"],
+        temperature=0.2,
+        api_key=chat_cfg.get("api_key"),
+    )
+
+    chain = build_simple_qa_chain(retriever, llm)
 
     result = chain.invoke(query)
 
@@ -38,7 +56,7 @@ def main():
     parser.add_argument("-k", "--top-k", type=int, default=5, help="검색 문서 수")
     args = parser.parse_args()
 
-    output = answer_question(args.query, top_k=args.top_k)
+    output = answer_simple_question(args.query, top_k=args.top_k)
     print(output)
 
 

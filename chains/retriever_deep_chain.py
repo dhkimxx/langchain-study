@@ -5,10 +5,10 @@ from typing import List
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
 
-from utils.env_loader import AppSettings
-from chains.retriever_chain import build_embeddings
 from chromadb import PersistentClient
 import time
+from .factory import new_embedding
+import os
 
 _DEEP_COLLECTION_NAME = "techletter_posts_deep"
 
@@ -16,11 +16,16 @@ _DEEP_COLLECTION_NAME = "techletter_posts_deep"
 def ingest_deep_documents(
     docs: List[Document],
     *,
-    settings: AppSettings,
+    persist_dir: str,
+    provider: str,
+    model_name: str,
+    api_key: str | None = None,
 ) -> None:
-    embeddings = build_embeddings(settings)
+    embeddings = new_embedding(provider, model_name, api_key=api_key)
+    if not os.path.exists(persist_dir):
+        os.makedirs(persist_dir)
     db = Chroma(
-        persist_directory=settings.vector_db_path,
+        persist_directory=persist_dir,
         embedding_function=embeddings,
         collection_name=_DEEP_COLLECTION_NAME,
     )
@@ -37,27 +42,25 @@ def ingest_deep_documents(
                 attempt += 1
                 if attempt > max_retries:
                     raise
-                if "429" in str(e) or "rate limit" in str(e).lower():
-                    sleep_s = 2**attempt
-                    time.sleep(sleep_s * 60)
                 else:
-                    raise
+                    print(f"Retrying {attempt} after error: {e}")
+                    time.sleep(2**attempt)
 
 
-def get_deep_retriever(*, settings: AppSettings, k: int = 8):
-    embeddings = build_embeddings(settings)
+def get_deep_retriever(
+    *,
+    persist_dir: str,
+    provider: str,
+    model_name: str,
+    api_key: str | None = None,
+    k: int = 8,
+):
+    embeddings = new_embedding(provider, model_name, api_key=api_key)
+    if not os.path.exists(persist_dir):
+        os.makedirs(persist_dir)
     db = Chroma(
-        persist_directory=settings.vector_db_path,
+        persist_directory=persist_dir,
         embedding_function=embeddings,
         collection_name=_DEEP_COLLECTION_NAME,
     )
     return db.as_retriever(search_kwargs={"k": k})
-
-
-def reset_deep_collection(*, settings: AppSettings) -> None:
-    client = PersistentClient(path=settings.vector_db_path)
-    try:
-        client.delete_collection(_DEEP_COLLECTION_NAME)
-    except Exception:
-        # 컬렉션이 없거나 삭제 실패해도 전체 디렉토리를 건드리지 않는다.
-        pass

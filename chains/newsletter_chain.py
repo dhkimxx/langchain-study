@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain.chat_models.base import BaseChatModel
 
 
-_SYSTEM_PROMPT = (
+NEWSLETTER_SYSTEM_PROMPT = (
     "당신은 Tech Blog 주간 뉴스레터 편집자입니다. 다음 컨텍스트(최근 포스트들)를 기반으로 '주간 요약'을 한국어로 작성하세요.\n"
     "- 맥락에 포함된 정보만 사용하고, 추측/환상을 추가하지 마세요.\n"
     "- 마크다운으로 구성합니다.\n"
@@ -14,13 +14,12 @@ _SYSTEM_PROMPT = (
 )
 
 
-def build_newsletter_chain(model_name: str, temperature: float = 0.3):
+def build_newsletter_chain(llm: BaseChatModel):
     """왜: 주간 뉴스레터 생성을 표준화된 체인으로 제공한다."""
-    llm = ChatGoogleGenerativeAI(model=model_name, temperature=temperature)
 
     prompt = ChatPromptTemplate.from_messages(
         [
-            ("system", _SYSTEM_PROMPT),
+            ("system", NEWSLETTER_SYSTEM_PROMPT),
             (
                 "human",
                 "기간: {start} ~ {end}\n\n컨텍스트(최근 포스트들):\n{context}\n\n"

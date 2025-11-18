@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import argparse
 
-from ingest import run_ingest
-from qa import answer_question
+from ingest_simple import run_simple_ingest
 from features.newsletter.generator import generate_ai_weekly_newsletter
 from ingest_deep import run_deep_ingest
 from qa_deep import answer_deep_question
+from qa_simple import answer_simple_question
 
 
 def main():
@@ -44,9 +44,9 @@ def main():
     args = parser.parse_args()
 
     if args.command == "ingest":
-        run_ingest(reset=args.reset)
+        run_simple_ingest(reset=args.reset)
     elif args.command == "qa":
-        print(answer_question(args.query, top_k=args.top_k))
+        print(answer_simple_question(args.query, top_k=args.top_k))
     elif args.command == "newsletter":
         result = generate_ai_weekly_newsletter(
             days=args.days,

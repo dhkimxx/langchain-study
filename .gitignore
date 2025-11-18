@@ -3,3 +3,6 @@ data
 __pycache__
 outputs
 config.yaml
+venv
+.venv
+.python-version

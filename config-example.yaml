@@ -1,0 +1,19 @@
+app:
+  techletter_base_url: http://<host>:<port>/api/v1
+  vector_db_path: ./data/vector_store
+
+chains:
+  embedding:
+    provider: google # [google, openai]
+    api_key: your_ai_api_key_here
+    model_name: models/gemini-embedding-001
+  
+  retriever:
+    provider: google # [google, openai]
+    api_key: your_ai_api_key_here
+    model_name: models/gemini-embedding-001
+  
+  chat:
+    provider: google # [google, openai]
+    api_key: your_ai_api_key_here
+    model_name: gemini-2.5-flash
