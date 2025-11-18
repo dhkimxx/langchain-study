@@ -4,18 +4,21 @@ import argparse
 import shutil
 from typing import List
 
-from utils.env_loader import load_settings
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+
+from chains.retriever_simple_chain import ingest_simple_documents
 from utils.logger import get_logger
 from utils.api_client import TechLetterClient, PaginationPostDTO
 from utils.text_utils import to_document
-from chains.retriever_chain import ingest_documents
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+from utils.app_config import CONFIG
 
 
 logger = get_logger(__name__)
 
 
-def _fetch_all_posts(client: TechLetterClient, page_size: int = 100) -> List[PaginationPostDTO]:
+def _fetch_all_posts(
+    client: TechLetterClient, page_size: int = 100
+) -> List[PaginationPostDTO]:
     page = 1
     items: List[PaginationPostDTO] = []
     while True:
@@ -29,13 +32,11 @@ def _fetch_all_posts(client: TechLetterClient, page_size: int = 100) -> List[Pag
     return items
 
 
-def run_ingest(reset: bool = False) -> None:
-    settings = load_settings()
+def run_simple_ingest(reset: bool = False) -> None:
     if reset:
-        # 왜: 재생성 옵션 요청 시 깨끗한 벡터 스토어를 보장한다.
-        shutil.rmtree(settings.vector_db_path, ignore_errors=True)
+        shutil.rmtree(CONFIG.vector_db_path, ignore_errors=True)
 
-    client = TechLetterClient(base_url=settings.techletter_base_url)
+    client = TechLetterClient(base_url=CONFIG.techletter_base_url)
     pages = _fetch_all_posts(client)
 
     posts = [p for page in pages for p in page.data]
@@ -50,15 +51,24 @@ def run_ingest(reset: bool = False) -> None:
     splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
     chunks = splitter.split_documents(docs)
 
-    ingest_documents(chunks, settings=settings)
+    emb_cfg = CONFIG.get_chain_config("embedding")
+    ingest_simple_documents(
+        chunks,
+        persist_dir=CONFIG.vector_db_path,
+        provider=emb_cfg["provider"],
+        model_name=emb_cfg["model_name"],
+        api_key=emb_cfg.get("api_key"),
+    )
     logger.info("임베딩 및 인덱싱 완료")
 
 
 def main():
     parser = argparse.ArgumentParser(description="Tech-Letter 데이터 수집 및 인덱싱")
-    parser.add_argument("--reset", action="store_true", help="기존 벡터 스토어 초기화 후 재생성")
+    parser.add_argument(
+        "--reset", action="store_true", help="기존 벡터 스토어 초기화 후 재생성"
+    )
     args = parser.parse_args()
-    run_ingest(reset=args.reset)
+    run_simple_ingest(reset=args.reset)
 
 
 if __name__ == "__main__":

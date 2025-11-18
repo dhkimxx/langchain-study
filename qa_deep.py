@@ -2,19 +2,37 @@ from __future__ import annotations
 
 import argparse
 
-from utils.env_loader import load_settings
+from chains.retriever_deep_chain import get_deep_retriever
 from utils.logger import get_logger
-from chains.retriever_deep import get_deep_retriever
 from chains.deep_qa_chain import build_deep_qa_chain
+from chains.factory import new_chat
+from utils.app_config import CONFIG
 
 
 logger = get_logger(__name__)
 
 
 def answer_deep_question(query: str, top_k: int = 8) -> str:
-    settings = load_settings()
-    retriever = get_deep_retriever(settings=settings, k=top_k)
-    chain = build_deep_qa_chain(retriever, model_name=settings.gemini_model)
+    # retriever (embedding provider)
+    emb_cfg = CONFIG.get_chain_config("retriever")
+    retriever = get_deep_retriever(
+        persist_dir=CONFIG.vector_db_path,
+        provider=emb_cfg["provider"],
+        model_name=emb_cfg["model_name"],
+        api_key=emb_cfg.get("api_key"),
+        k=top_k,
+    )
+
+    # chat LLM
+    chat_cfg = CONFIG.get_chain_config("chat")
+    llm = new_chat(
+        chat_cfg["provider"],
+        chat_cfg["model_name"],
+        temperature=1.0,
+        api_key=chat_cfg.get("api_key"),
+    )
+
+    chain = build_deep_qa_chain(retriever, llm)
     result = chain.invoke(query)
     return result
 

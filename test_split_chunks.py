@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import re
 import time
 from pathlib import Path
 
@@ -14,7 +13,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 from utils.aggregate import aggregate_text
 from utils.api_client import TechLetterClient
 from utils.doc_builders import build_document_from_full_text
-from utils.env_loader import load_settings
+from utils.app_config import CONFIG
 
 
 def _ensure_dir(p: str | Path) -> Path:
@@ -54,20 +53,8 @@ def _fetch_html(url: str, wait_seconds: float = 8.0) -> str:
         driver.quit()
 
 
-def _document_to_record(doc, extra: dict | None = None) -> dict:
-    rec = {
-        "page_content": getattr(doc, "page_content", ""),
-        "content_length": len(getattr(doc, "page_content", "")),
-        "metadata": dict(getattr(doc, "metadata", {}) or {}),
-    }
-    if extra:
-        rec.update(extra)
-    return rec
-
-
 if __name__ == "__main__":
-    settings = load_settings()
-    client = TechLetterClient(base_url=settings.techletter_base_url)
+    client = TechLetterClient(base_url=CONFIG.techletter_base_url)
     resp = client.list_posts(page=1, page_size=5)
 
     logs_dir = _ensure_dir("outputs/stage_logs")

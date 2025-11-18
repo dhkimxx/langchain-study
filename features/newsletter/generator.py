@@ -4,11 +4,12 @@ from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
 from typing import Optional, List
 
-from utils.env_loader import load_settings
 from utils.logger import get_logger
 from utils.api_client import TechLetterClient, PostDTO
 from utils.data_loader import fetch_all_posts, filter_posts_by_datetime_range
 from chains.newsletter_chain import build_newsletter_chain
+from chains.factory import new_chat
+from utils.app_config import CONFIG
 
 
 logger = get_logger(__name__)
@@ -50,8 +51,7 @@ def generate_ai_weekly_newsletter(
     limit: int = 100,
 ) -> NewsletterResult:
     """왜: 최근 기간의 포스트를 요약한 주간 뉴스레터 콘텐츠를 생성한다."""
-    settings = load_settings()
-    client = TechLetterClient(base_url=settings.techletter_base_url)
+    client = TechLetterClient(base_url=CONFIG.techletter_base_url)
 
     end_dt = _parse_cli_date(end) or datetime.now(tz=_KST)
     start_dt = _parse_cli_date(start) or (end_dt - timedelta(days=days))
@@ -70,7 +70,14 @@ def generate_ai_weekly_newsletter(
 
     context = _format_posts_for_context(selected)
 
-    chain = build_newsletter_chain(model_name=settings.gemini_model)
+    chat_cfg = CONFIG.get_chain_config("chat")
+    llm = new_chat(
+        chat_cfg["provider"],
+        chat_cfg["model_name"],
+        temperature=0.3,
+        api_key=chat_cfg.get("api_key"),
+    )
+    chain = build_newsletter_chain(llm)
     rendered = chain.invoke(
         {
             "start": start_dt.strftime("%Y-%m-%d"),

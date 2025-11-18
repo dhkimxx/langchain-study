@@ -3,7 +3,7 @@ from __future__ import annotations
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain.chat_models.base import BaseChatModel
 
 from utils.text_utils import format_docs_for_prompt
 
@@ -35,10 +35,8 @@ SIMPLE_QA_SYSTEM_PROMPT = (
     "```\n"
 )
 
-def build_qa_chain(
-    retriever, model_name: str , temperature: float = 0.2
-):
-    llm = ChatGoogleGenerativeAI(model=model_name, temperature=temperature)
+
+def build_simple_qa_chain(retriever, llm: BaseChatModel):
 
     prompt = ChatPromptTemplate.from_messages(
         [

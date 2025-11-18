@@ -1,17 +1,18 @@
 from __future__ import annotations
 
 import argparse
+import shutil
 from typing import List
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-from utils.env_loader import load_settings
+from chains.retriever_deep_chain import ingest_deep_documents
 from utils.logger import get_logger
 from utils.api_client import TechLetterClient, PostDTO
 from utils.data_loader import fetch_all_posts
 from utils.doc_builders import build_document_from_full_text
 from utils.aggregate import aggregate_text
-from chains.retriever_deep import ingest_deep_documents, reset_deep_collection
+from utils.app_config import CONFIG
 
 
 logger = get_logger(__name__)
@@ -30,11 +31,10 @@ def run_deep_ingest(
     limit: int | None = None,
     page_limit: int | None = None,
 ) -> None:
-    settings = load_settings()
     if reset:
-        reset_deep_collection(settings=settings)
+        shutil.rmtree(CONFIG.vector_db_path, ignore_errors=True)
 
-    client = TechLetterClient(base_url=settings.techletter_base_url)
+    client = TechLetterClient(base_url=CONFIG.techletter_base_url)
     posts: List[PostDTO] = fetch_all_posts(client, page_size=100, page_limit=page_limit)
     if limit:
         posts = posts[: max(1, limit)]
@@ -54,7 +54,14 @@ def run_deep_ingest(
         chunks = splitter.split_documents([doc])
 
         print("ingesting")
-        ingest_deep_documents(chunks, settings=settings)
+        emb_cfg = CONFIG.get_chain_config("embedding")
+        ingest_deep_documents(
+            chunks,
+            persist_dir=CONFIG.vector_db_path,
+            provider=emb_cfg["provider"],
+            model_name=emb_cfg["model_name"],
+            api_key=emb_cfg.get("api_key"),
+        )
         did_any = True
 
     if not did_any:
