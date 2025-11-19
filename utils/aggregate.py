@@ -71,35 +71,111 @@ def _html_to_text_via_transformer(html: str) -> str:
     return "\n\n".join(texts).strip()
 
 
-def aggregate_text(url: str) -> str:
-    """왜: Cloudflare 등 챌린지 페이지를 고려해 커스텀 Selenium으로 본문을 획득한다."""
+def _fetch_html_via_selenium(url: str) -> str:
+    """왜: Cloudflare/challenge를 통과한 뒤의 안정된 HTML 스냅샷을 재사용하기 위함."""
     driver = _launch_driver()
     try:
         driver.get(url)
 
-        # 초기 로딩 대기 및 챌린지 통과 대기(최대 25초)
         deadline = time.time() + 25.0
         last_html = driver.page_source
         time.sleep(2.0)
         while time.time() < deadline:
             html = driver.page_source
             if not _looks_like_challenge(html):
-                # 안정화를 위해 추가 짧은 대기 후 비교
+                # 왜: 챌린지/리다이렉트가 끝난 뒤 한 번 더 대기하여 DOM이 안정될 시간을 준다.
                 time.sleep(1.5)
                 html2 = driver.page_source
                 if len(html2) >= len(html) and not _looks_like_challenge(html2):
-                    text = _html_to_text_via_transformer(html2)
-                    if len(text) > 300:
-                        return text
-            # 변경 감지 없으면 잠깐 대기 후 재시도
+                    return html2
+
             if len(html) == len(last_html):
                 time.sleep(1.0)
             last_html = html
 
-        # 타임아웃: 확보 가능한 범위에서 변환
-        return _html_to_text_via_transformer(driver.page_source)
+        # 타임아웃: 확보 가능한 범위에서 가장 최근 HTML 사용
+        return driver.page_source
     finally:
         driver.quit()
+
+
+def aggregate_text(url: str) -> str:
+    """왜: 기존 파이프라인과 동일하게 Selenium + Html2Text 기반으로 본문 텍스트를 얻기 위함."""
+    html = _fetch_html_via_selenium(url)
+    return _html_to_text_via_transformer(html)
+
+
+def _remove_common_noise_nodes(html: str) -> str:
+    """왜: header/nav/footer/aside 등 공통 레이아웃 DOM을 제거해 노이즈를 줄이기 위함."""
+    try:
+        from bs4 import BeautifulSoup
+    except ImportError:
+        # bs4가 없으면 기존 HTML을 그대로 사용한다.
+        return html
+
+    soup = BeautifulSoup(html, "html.parser")
+
+    # 구조적으로 노이즈 가능성이 큰 태그 제거
+    for tag_name in ["script", "style", "nav", "footer", "header", "aside"]:
+        for tag in soup.find_all(tag_name):
+            tag.decompose()
+
+    # 공통적으로 많이 쓰이는 header/footer/nav/사이드바 관련 id/class 제거
+    noise_keywords = [
+        "header",
+        "footer",
+        "nav",
+        "menu",
+        "sidebar",
+        "aside",
+        "share",
+        "social",
+        "comment",
+        "comments",
+        "reply",
+        "subscribe",
+        "signup",
+        "newsletter",
+        "related",
+        "recommend",
+        "recommendation",
+        "breadcrumb",
+        "tags",
+        "meta",
+    ]
+
+    for attr in ["id", "class"]:
+        for kw in noise_keywords:
+            for node in soup.find_all(attrs={attr: re.compile(kw, re.IGNORECASE)}):
+                node.decompose()
+
+    return str(soup)
+
+
+def aggregate_text_dom_clean(url: str) -> str:
+    """왜: HTML 단계에서 공통 노이즈 DOM을 제거한 뒤 텍스트를 추출하는 전략."""
+    html = _fetch_html_via_selenium(url)
+    cleaned_html = _remove_common_noise_nodes(html)
+    return _html_to_text_via_transformer(cleaned_html)
+
+
+def aggregate_text_trafilatura(url: str) -> str:
+    """왜: trafilatura의 ML 기반 본문 추출기를 사용해 기사 본문만 최대한 정확히 추출하기 위함."""
+    try:
+        import trafilatura
+    except ImportError as exc:
+        raise ImportError(
+            "trafilatura가 설치되어 있지 않습니다. `pip install trafilatura` 후 다시 시도해 주세요."
+        ) from exc
+
+    html = _fetch_html_via_selenium(url)
+    text = trafilatura.extract(html, url=url, favor_precision=True)
+
+    if not text:
+        # 왜: 추출 실패 시 기존 aggregate_text 전략으로 안전하게 폴백한다.
+        return aggregate_text(url)
+
+    return text.strip()
 
 
 if __name__ == "__main__":

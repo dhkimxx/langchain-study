@@ -19,3 +19,4 @@ beautifulsoup4==4.12.3
 lxml==5.4.0
 html2text==2020.1.16
 unstructured[html]==0.14.10
+trafilatura==2.0.0
